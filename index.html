@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz de Recuperação</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="flex align-center justify-center" style="flex-direction: column;">
+  <div class="text-center w-100">
+    <h1>QUIZ DE RECUPERAÇÃO</h1>
+    <h2>Selecione o Jogador</h2>
+
+    <div class="mt-4" style="background-color: #2b2b2b; padding: 40px; border-radius: 15px; display: inline-block; min-width: 50%;">
+      <div id="nome-jogador" class="text-verde" style="font-size: 3.5rem; margin-bottom: 30px; transition: opacity 0.3s; font-weight: bold;">
+        Carregando...
+      </div>
+
+      <div class="flex gap-2 justify-center">
+        <button id="btn-sortear" class="btn" disabled>🔄 Sortear Novamente</button>
+        <button id="btn-confirmar" class="btn" style="background-color: #03D92D; color: #1a1a1a;" disabled>✅ Confirmar Jogador</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

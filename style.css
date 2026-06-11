@@ -1,0 +1,195 @@
+/* Reset e base */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 20px;
+  font-weight: bold;
+  min-height: 100vh;
+}
+
+/* Tipografia */
+h1 {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #03D92D;
+}
+
+h2 {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.texto-pergunta {
+  font-size: 2rem;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.texto-alternativa {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.texto-apoio {
+  font-size: 1.2rem;
+}
+
+/* Botões padrão */
+.btn {
+  background-color: #2b2b2b;
+  color: #ffffff;
+  border: 3px solid #03D92D;
+  border-radius: 10px;
+  padding: 16px 32px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn:hover:not(:disabled) {
+  background-color: #03D92D;
+  color: #1a1a1a;
+  transform: scale(1.04);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Alternativas (botões de resposta) */
+.alternativa {
+  background-color: #2b2b2b;
+  color: #ffffff;
+  border: 3px solid transparent;
+  border-radius: 10px;
+  padding: 16px 32px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  text-align: left;
+}
+
+.alternativa:hover:not(:disabled) {
+  border-color: #03D92D;
+}
+
+.alternativa.correta {
+  background-color: #03D92D !important;
+  color: #1a1a1a !important;
+  border-color: #03D92D !important;
+}
+
+.alternativa.errada {
+  background-color: #D90303 !important;
+  color: #ffffff !important;
+  border-color: #D90303 !important;
+}
+
+.alternativa.eliminada {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: #888888;
+  pointer-events: none;
+}
+
+/* Cards de risco */
+.container-risco {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.card-risco {
+  flex: 1;
+  padding: 20px;
+  font-size: 1.5rem;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: bold;
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.card-risco:hover:not(.acertar) {
+  transform: scale(1.02);
+}
+
+.card-risco.errar {
+  background-color: #5a1a1a;
+  border: 3px solid #D90303;
+}
+
+.card-risco.parar {
+  background-color: #3a3a1a;
+  border: 3px solid #D9B703;
+}
+
+.card-risco.acertar {
+  background-color: #1a3a1a;
+  border: 3px solid #03D92D;
+  cursor: default;
+}
+
+/* Botões de ajuda */
+.container-ajudas {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-ajuda {
+  flex: 1;
+  background-color: #2b2b2b;
+  color: #03D92D;
+  border: 3px solid #03D92D;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-ajuda:hover:not(:disabled) {
+  background-color: #03D92D;
+  color: #1a1a1a;
+}
+
+.btn-ajuda:disabled {
+  background-color: #4a4a4a;
+  color: #888888;
+  border-color: #888888;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* Utilitários Extras de Layout */
+.text-center { text-align: center; }
+.text-verde { color: #03D92D; }
+.mt-4 { margin-top: 2rem; }
+.mb-4 { margin-bottom: 2rem; }
+.flex { display: flex; }
+.gap-2 { gap: 1rem; }
+.justify-center { justify-content: center; }
+.align-center { align-items: center; }
+.w-100 { width: 100%; }
+
+@keyframes pulso {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}

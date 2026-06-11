@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz - Jogo</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Estilos de layout específicos para quiz.html */
+    .header-quiz {
+      display: flex;
+      justify-content: flex-end;
+      padding: 20px 40px;
+    }
+    .nome-jogador-topo {
+      color: #03D92D;
+      font-size: 2.5rem;
+      font-weight: bold;
+    }
+    .layout-quiz {
+      display: flex;
+      padding: 0 40px;
+      gap: 40px;
+      min-height: 70vh;
+    }
+    .coluna-esquerda {
+      flex: 0 0 45%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .coluna-direita {
+      flex: 0 0 55%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      justify-content: center;
+    }
+    .pontuacao-atual {
+      font-size: 1.8rem;
+      color: #ffffff;
+      margin-bottom: 10px;
+    }
+    .area-inferior {
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="header-quiz">
+    <div id="quiz-nome-jogador" class="nome-jogador-topo">Jogador</div>
+  </div>
+
+  <div class="layout-quiz" id="area-quiz-principal">
+    
+    <!-- Lado Esquerdo -->
+    <div class="coluna-esquerda">
+      <div id="texto-pergunta" class="texto-pergunta">
+        Carregando pergunta...
+      </div>
+
+      <div class="area-inferior">
+        <div id="texto-pontos" class="pontuacao-atual">Valendo 0.0 Pontos na média</div>
+        
+        <div class="container-ajudas">
+          <button id="btn-ajuda-colegas" class="btn-ajuda" onclick="ajudaColegas()">Colegas (2)</button>
+          <button id="btn-ajuda-cartas" class="btn-ajuda" onclick="ajudaCartas()">Cartas (2)</button>
+          <button id="btn-ajuda-pulo" class="btn-ajuda" onclick="ajudaPulo()">Pulo (3)</button>
+        </div>
+
+        <div class="container-risco">
+          <div id="card-errar" class="card-risco errar" onclick="acaoErrar()">ERRAR<br>0,0</div>
+          <div id="card-parar" class="card-risco parar" onclick="acaoParar()">PARAR<br>0,0</div>
+          <div id="card-acertar" class="card-risco acertar">ACERTAR<br>0,0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lado Direito -->
+    <div class="coluna-direita" id="container-alternativas">
+      <button class="alternativa" id="alt-0" onclick="responder(0)">A) ...</button>
+      <button class="alternativa" id="alt-1" onclick="responder(1)">B) ...</button>
+      <button class="alternativa" id="alt-2" onclick="responder(2)">C) ...</button>
+      <button class="alternativa" id="alt-3" onclick="responder(3)">D) ...</button>
+    </div>
+
+  </div>
+
+  <!-- Ordem importante: dados primeiro, lógica depois -->
+  <script src="perguntas.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
