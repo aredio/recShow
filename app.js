@@ -86,9 +86,53 @@ let estado = {
   ajudas: { colegas: 2, cartas: 2, pulo: 3 }
 };
 
+// Nível de dificuldade esperado para cada rodada (índice 0 = pergunta 1)
+const DIFICULDADE_POR_RODADA = [
+  "facil",   // rodada 1
+  "facil",   // rodada 2
+  "facil",   // rodada 3
+  "facil",   // rodada 4
+  "medio",   // rodada 5
+  "medio",   // rodada 6
+  "medio",   // rodada 7
+  "medio",   // rodada 8
+  "dificil", // rodada 9
+  "dificil"  // rodada 10
+];
+
 // Funções de formatação e utilitários
 function embaralharArray(array) {
   return array.sort(() => Math.random() - 0.5);
+}
+
+function embaralhar(array) {
+  return [...array].sort(() => Math.random() - 0.5);
+}
+
+function selecionarPerguntasDoQuiz() {
+  // Separar o banco por nível e embaralhar cada grupo
+  const faceis   = embaralhar(bancoPerguntasGlobal.filter(p => p.dificuldade === "facil"));
+  const medias   = embaralhar(bancoPerguntasGlobal.filter(p => p.dificuldade === "medio"));
+  const dificeis = embaralhar(bancoPerguntasGlobal.filter(p => p.dificuldade === "dificil"));
+
+  // Montar as 10 perguntas do quiz na ordem correta de dificuldade
+  const perguntasDoQuiz = [
+    ...faceis.slice(0, 4),   // rodadas 1–4: fáceis
+    ...medias.slice(0, 4),   // rodadas 5–8: médias
+    ...dificeis.slice(0, 2)  // rodadas 9–10: difíceis
+  ];
+
+  // Guardar as reservas separadas por nível para uso no Pulo
+  estado.reserva = {
+    facil:   faceis.slice(4),
+    medio:   medias.slice(4),
+    dificil: dificeis.slice(2)
+  };
+
+  // Registrar todos os IDs já em uso para não repetir
+  estado.idsUsados = new Set(perguntasDoQuiz.map(p => p.id));
+
+  return perguntasDoQuiz;
 }
 
 // 7.1 — Inicialização do quiz
@@ -102,9 +146,7 @@ function inicializarQuiz() {
 
   // 2. Selecionar 10 perguntas aleatórias e 3. Guardar as restantes
   if (typeof bancoPerguntasGlobal !== 'undefined') {
-    let bancoEmbaralhado = embaralharArray([...bancoPerguntasGlobal]);
-    perguntasQuiz = bancoEmbaralhado.slice(0, 10);
-    perguntasReserva = bancoEmbaralhado.slice(10);
+    perguntasQuiz = selecionarPerguntasDoQuiz();
   }
 
   // 4. Inicializar estado do jogo
@@ -157,6 +199,13 @@ function renderizarPergunta() {
 
   // 5. Atualizar os botões de ajuda
   atualizarBotoesAjuda(); 
+
+  // Atualizar badge de dificuldade
+  const nivel = DIFICULDADE_POR_RODADA[estado.perguntaAtual];
+  const badge = document.getElementById('badge-dificuldade');
+  const labels = { facil: '🟢 Fácil', medio: '🟡 Médio', dificil: '🔴 Difícil' };
+  badge.textContent = labels[nivel];
+  badge.className = `badge-dificuldade badge-${nivel}`;
 }
 
 function atualizarBotoesAjuda() {
@@ -389,17 +438,46 @@ function aplicarCartas(numEliminar) {
 
 function ajudaPulo() {
   if (estado.ajudas.pulo <= 0) return;
-  if (perguntasReserva.length === 0) {
-    alert("Não há mais perguntas no banco de reserva!");
+  estado.ajudas.pulo--;
+
+  const nivelAtual = DIFICULDADE_POR_RODADA[estado.perguntaAtual];
+
+  // Determinar o nível da pergunta substituta
+  // Fácil → substituta também é fácil (não há nível inferior)
+  // Médio → substituta é fácil
+  // Difícil → substituta é médio
+  const nivelSubstituta = {
+    facil:   "facil",
+    medio:   "facil",
+    dificil: "medio"
+  }[nivelAtual];
+
+  // Buscar uma pergunta disponível na reserva do nível substituto
+  const reservaDoNivel = estado.reserva[nivelSubstituta];
+  const substituta = reservaDoNivel.find(p => !estado.idsUsados.has(p.id));
+
+  if (!substituta) {
+    // Caso extremo: reserva esgotada para aquele nível
+    // Exibir aviso e devolver o uso
+    alert("Não há mais perguntas disponíveis para o Pulo neste nível!");
+    estado.ajudas.pulo++;
+    atualizarBotoesAjuda();
     return;
   }
-  estado.ajudas.pulo--;
-  atualizarBotoesAjuda();
 
-  const novaPergunta = perguntasReserva.shift();
-  perguntasQuiz[estado.perguntaAtual] = novaPergunta;
-  
+  // Marcar a substituta como usada
+  estado.idsUsados.add(substituta.id);
+
+  // Remover a substituta da reserva para não ser sorteada de novo
+  estado.reserva[nivelSubstituta] = reservaDoNivel.filter(p => p.id !== substituta.id);
+
+  // Substituir a pergunta atual no array do quiz (sem avançar o índice)
+  // DÚVIDA: O guia MD indica 'estado.perguntasDoQuiz', mas a variável correta e existente no projeto é 'perguntasQuiz'. Alterado para manter o projeto funcional.
+  perguntasQuiz[estado.perguntaAtual] = substituta;
+
+  // Re-renderizar a pergunta (função já existente no projeto)
   renderizarPergunta();
+  atualizarBotoesAjuda();
 }
 
 // --- Passo 9: Telas de Resultado ---

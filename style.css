@@ -193,3 +193,19 @@ h2 {
   50% { transform: scale(1.02); }
   100% { transform: scale(1); }
 }
+
+.badge-dificuldade {
+  display: inline-block;
+  padding: 4px 16px;
+  border-radius: 20px;
+  border: 2px solid;
+  font-size: 1rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.badge-facil   { color: #03D92D; border-color: #03D92D; }
+.badge-medio   { color: #D9B703; border-color: #D9B703; }
+.badge-dificil { color: #D90303; border-color: #D90303; }
