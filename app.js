@@ -33,9 +33,7 @@ async function carregarAlunos() {
   }
 
   if (listaAlunos.length > 0) {
-    sortearAluno();
-    btnSortear.disabled = false;
-    btnConfirmar.disabled = false;
+    inicializarSplash();
   } else {
     nomeJogadorEl.textContent = "Nenhum aluno encontrado";
   }
@@ -67,10 +65,224 @@ if (btnSortear) {
 
 if (btnConfirmar) {
   btnConfirmar.addEventListener('click', () => {
+    pararTodosOsSons();
     // Salvar o nome do jogador no sessionStorage para a tela de quiz
     sessionStorage.setItem('jogadorAtual', jogadorAtual);
     window.location.href = 'quiz.html';
   });
+}
+
+// Conjunto de nomes que já completaram ou encerraram um quiz nesta sessão.
+function obterAlunosQueJaJogaram() {
+  const dados = sessionStorage.getItem('alunosQueJaJogaram');
+  return dados ? JSON.parse(dados) : [];
+}
+
+function marcarAlunoComoJaJogou(nome) {
+  const lista = obterAlunosQueJaJogaram();
+  if (!lista.includes(nome)) {
+    lista.push(nome);
+    sessionStorage.setItem('alunosQueJaJogaram', JSON.stringify(lista));
+  }
+}
+
+// Conjunto de IDs de perguntas já utilizadas nesta sessão
+function obterPerguntasUsadasSessao() {
+  const dados = sessionStorage.getItem('perguntasUsadasSessao');
+  return dados ? JSON.parse(dados) : [];
+}
+
+function adicionarPerguntasUsadasSessao(ids) {
+  const lista = obterPerguntasUsadasSessao();
+  ids.forEach(id => {
+    if (!lista.includes(id)) lista.push(id);
+  });
+  sessionStorage.setItem('perguntasUsadasSessao', JSON.stringify(lista));
+}
+
+// Lógica do Ranking do Dia
+function adicionarAoRanking(nome, pontos) {
+  const rankingStr = sessionStorage.getItem('rankingDoDia');
+  let ranking = rankingStr ? JSON.parse(rankingStr) : [];
+  ranking.push({ nome, pontos, tempo: Date.now() });
+  sessionStorage.setItem('rankingDoDia', JSON.stringify(ranking));
+}
+
+function renderizarRanking() {
+  const container = document.getElementById('ranking-container');
+  if (!container) return;
+
+  const rankingStr = sessionStorage.getItem('rankingDoDia');
+  if (!rankingStr) {
+    container.classList.add('tela-oculta');
+    return;
+  }
+
+  let ranking = JSON.parse(rankingStr);
+  if (ranking.length === 0) {
+    container.classList.add('tela-oculta');
+    return;
+  }
+
+  // Ordenar por pontos (decrescente) e por tempo (crescente para empate)
+  ranking.sort((a, b) => {
+    if (b.pontos !== a.pontos) {
+      return b.pontos - a.pontos;
+    }
+    return a.tempo - b.tempo;
+  });
+
+  container.classList.remove('tela-oculta');
+
+  let tbodyHTML = '';
+  ranking.forEach((r, index) => {
+    let posicao = index + 1;
+    if (posicao === 1) posicao = '🥇';
+    else if (posicao === 2) posicao = '🥈';
+    else if (posicao === 3) posicao = '🥉';
+
+    const pontosFormatados = Number(r.pontos).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+
+    tbodyHTML += `
+      <tr>
+        <td class="col-posicao">${posicao}</td>
+        <td class="col-nome">${r.nome}</td>
+        <td class="col-pontos">${pontosFormatados} pts</td>
+      </tr>
+    `;
+  });
+
+  container.innerHTML = `
+    <h2 class="ranking-titulo">Ranking do Dia</h2>
+    <table class="ranking-table">
+      <thead>
+        <tr>
+          <th>Pos</th>
+          <th>Jogador</th>
+          <th>Pontuação</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tbodyHTML}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderizarGridAlunos(listaDeNomes) {
+  const grid = document.getElementById('grid-alunos');
+  if (!grid) return;
+  grid.innerHTML = ''; // limpar antes de renderizar
+
+  const jaJogaram = obterAlunosQueJaJogaram();
+
+  listaDeNomes.forEach(nome => {
+    const card = document.createElement('button');
+    card.className = 'aluno-card';
+    card.textContent = nome;
+
+    if (jaJogaram.includes(nome)) {
+      card.classList.add('ja-jogou');
+    }
+
+    card.addEventListener('click', () => {
+      selecionarJogadorManualmente(nome);
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+function selecionarJogadorManualmente(nome) {
+  // DÚVIDA: O guia não mandava atualizar jogadorAtual aqui, mas a tela 2 usa essa variável para salvar. Adicionado para funcionar.
+  jogadorAtual = nome;
+  exibirTelaConfirmacao(nome);
+}
+
+function exibirTelaGrid() {
+  const telaGrid = document.getElementById('tela-grid');
+  const telaConf = document.getElementById('tela-confirmacao');
+  if (!telaGrid || !telaConf) return;
+
+  telaGrid.classList.remove('tela-oculta');
+  telaGrid.classList.add('tela-ativa');
+
+  telaConf.classList.remove('tela-ativa');
+  telaConf.classList.add('tela-oculta');
+
+  // Re-renderizar a grid para refletir possíveis atualizações de "já jogou"
+  renderizarGridAlunos(listaAlunos);
+  
+  // Renderizar ranking se houver dados
+  renderizarRanking();
+}
+
+function exibirTelaConfirmacao(nome) {
+  document.getElementById('nome-jogador').textContent = nome;
+
+  const telaGrid = document.getElementById('tela-grid');
+  const telaConf = document.getElementById('tela-confirmacao');
+  if (!telaGrid || !telaConf) return;
+
+  telaConf.classList.remove('tela-oculta');
+  telaConf.classList.add('tela-ativa');
+
+  telaGrid.classList.remove('tela-ativa');
+  telaGrid.classList.add('tela-oculta');
+
+  if (btnSortear) btnSortear.disabled = false;
+  if (btnConfirmar) btnConfirmar.disabled = false;
+}
+
+const btnSortearJogador = document.getElementById('btn-sortear-jogador');
+if (btnSortearJogador) {
+  btnSortearJogador.addEventListener('click', () => {
+    sortearAluno(); // função de sorteio já existente
+    exibirTelaConfirmacao(jogadorAtual);
+  });
+}
+
+const btnEscolherLista = document.getElementById('btn-escolher-lista');
+if (btnEscolherLista) {
+  btnEscolherLista.addEventListener('click', () => {
+    exibirTelaGrid();
+  });
+}
+
+function inicializarSplash() {
+  tocarSom('inicio'); // tenta tocar em loop (autoplay pode ser bloqueado)
+
+  let audioDesbloqueado = false;
+
+  const avancar = (e) => {
+    // Se o autoplay falhou, o primeiro clique apenas desbloqueia o áudio
+    if (typeof sons !== 'undefined' && sons.inicio && sons.inicio.paused && !audioDesbloqueado) {
+      tocarSom('inicio');
+      audioDesbloqueado = true;
+      const instrucao = document.querySelector('.splash-instrucao');
+      if (instrucao) {
+        instrucao.textContent = "Áudio ativado! Clique novamente para começar";
+      }
+      return; // não avança a tela ainda
+    }
+
+    // O som 'inicio' continua tocando na grid, será parado apenas ao confirmar o jogador
+    document.removeEventListener('keydown', avancar);
+    const telaSplash = document.getElementById('tela-splash');
+    if (telaSplash) {
+      telaSplash.removeEventListener('click', avancar);
+      telaSplash.classList.add('tela-oculta');
+      telaSplash.classList.remove('tela-ativa');
+    }
+
+    exibirTelaGrid(); // função já existente da adição da grid de alunos
+  };
+
+  const telaSplash = document.getElementById('tela-splash');
+  if (telaSplash) {
+    telaSplash.addEventListener('click', avancar);
+  }
+  document.addEventListener('keydown', avancar);
 }
 
 // Iniciar leitura e sorteio se estiver na index
@@ -110,10 +322,25 @@ function embaralhar(array) {
 }
 
 function selecionarPerguntasDoQuiz() {
-  // Separar o banco por nível e embaralhar cada grupo
-  const faceis   = embaralhar(bancoPerguntasGlobal.filter(p => p.dificuldade === "facil"));
-  const medias   = embaralhar(bancoPerguntasGlobal.filter(p => p.dificuldade === "medio"));
-  const dificeis = embaralhar(bancoPerguntasGlobal.filter(p => p.dificuldade === "dificil"));
+  const usadasSessao = new Set(obterPerguntasUsadasSessao());
+  
+  // Filtrar o banco para remover as que já foram na sessão
+  let bancoDisponivel = bancoPerguntasGlobal.filter(p => !usadasSessao.has(p.id));
+  
+  // Se não houver perguntas suficientes, limpamos o histórico global e recomeçamos
+  const qFacil = bancoDisponivel.filter(p => p.dificuldade === "facil");
+  const qMedio = bancoDisponivel.filter(p => p.dificuldade === "medio");
+  const qDificil = bancoDisponivel.filter(p => p.dificuldade === "dificil");
+  
+  if (qFacil.length < 15 || qMedio.length < 10 || qDificil.length < 5) {
+    sessionStorage.removeItem('perguntasUsadasSessao');
+    bancoDisponivel = bancoPerguntasGlobal;
+  }
+
+  // Separar o banco disponível por nível e embaralhar cada grupo
+  const faceis   = embaralhar(bancoDisponivel.filter(p => p.dificuldade === "facil"));
+  const medias   = embaralhar(bancoDisponivel.filter(p => p.dificuldade === "medio"));
+  const dificeis = embaralhar(bancoDisponivel.filter(p => p.dificuldade === "dificil"));
 
   // Montar as 10 perguntas do quiz na ordem correta de dificuldade
   const perguntasDoQuiz = [
@@ -129,8 +356,11 @@ function selecionarPerguntasDoQuiz() {
     dificil: dificeis.slice(2)
   };
 
-  // Registrar todos os IDs já em uso para não repetir
+  // Registrar todos os IDs já em uso para não repetir no mesmo jogo
   estado.idsUsados = new Set(perguntasDoQuiz.map(p => p.id));
+  
+  // Registrar globalmente essas 10 para as próximas partidas da mesma sessão
+  adicionarPerguntasUsadasSessao(Array.from(estado.idsUsados));
 
   return perguntasDoQuiz;
 }
@@ -160,11 +390,12 @@ function inicializarQuiz() {
 
 // 7.2 — Cálculo de pontos por pergunta
 function valorDaPergunta(indicePergunta) {
-  return (indicePergunta + 1) * 0.5;
+  return 0.5;
 }
 
 // 7.3 — Renderizar pergunta atual
 function renderizarPergunta() {
+  iniciarCicloDePergunta();
   const perguntaObj = perguntasQuiz[estado.perguntaAtual];
   
   // 1. Exibir o texto da pergunta
@@ -189,13 +420,16 @@ function renderizarPergunta() {
   document.getElementById('texto-pontos').textContent = `Valendo ${valendo} Pontos na média`;
 
   // 4. Atualizar os cards de risco
-  const ptsErrados = Math.round((estado.pontosAcumulados / 2) * 10) / 10;
+  const ptsErrados = estado.pontosAcumulados / 2;
   const ptsParar = estado.pontosAcumulados;
   const ptsAcertar = estado.pontosAcumulados + valorDaPergunta(estado.perguntaAtual);
   
-  document.getElementById('card-errar').innerHTML = `ERRAR<br>${ptsErrados.toFixed(1).replace('.', ',')}`;
-  document.getElementById('card-parar').innerHTML = `PARAR<br>${ptsParar.toFixed(1).replace('.', ',')}`;
-  document.getElementById('card-acertar').innerHTML = `ACERTAR<br>${ptsAcertar.toFixed(1).replace('.', ',')}`;
+  // Formatar para mostrar até 2 casas decimais, substituindo o ponto por vírgula
+  const formatarPontos = (pts) => Number(pts).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  
+  document.getElementById('card-errar').innerHTML = `ERRAR<br>${formatarPontos(ptsErrados)}`;
+  document.getElementById('card-parar').innerHTML = `PARAR<br>${formatarPontos(ptsParar)}`;
+  document.getElementById('card-acertar').innerHTML = `ACERTAR<br>${formatarPontos(ptsAcertar)}`;
 
   // 5. Atualizar os botões de ajuda
   atualizarBotoesAjuda(); 
@@ -206,6 +440,9 @@ function renderizarPergunta() {
   const labels = { facil: '🟢 Fácil', medio: '🟡 Médio', dificil: '🔴 Difícil' };
   badge.textContent = labels[nivel];
   badge.className = `badge-dificuldade badge-${nivel}`;
+
+  // 6. Atualizar a barra de progresso
+  atualizarBarraDeProgresso(10, estado.perguntaAtual);
 }
 
 function atualizarBotoesAjuda() {
@@ -227,8 +464,38 @@ function atualizarBotoesAjuda() {
   }
 }
 
+function atualizarBarraDeProgresso(total, atual) {
+  const container = document.getElementById('barra-progresso');
+  if (!container) return;
+  
+  // Limpar e criar as bolinhas apenas se estiver vazio
+  if (container.children.length === 0) {
+    for (let i = 0; i < total; i++) {
+      const bolinha = document.createElement('div');
+      bolinha.className = 'bolinha-progresso';
+      bolinha.id = `bolinha-${i}`;
+      container.appendChild(bolinha);
+    }
+  }
+
+  // Atualizar estado de cada bolinha
+  for (let i = 0; i < total; i++) {
+    const bolinha = document.getElementById(`bolinha-${i}`);
+    if (!bolinha) continue;
+
+    bolinha.className = 'bolinha-progresso'; // Resetar classes
+    
+    if (i < atual) {
+      bolinha.classList.add('respondida');
+    } else if (i === atual) {
+      bolinha.classList.add('atual');
+    }
+  }
+}
+
 // 7.4 — Processar resposta do jogador
 function responder(indiceAlternativaSelecionada) {
+  pararTrilha();
   // 1. Desabilitar todos os botões imediatamente
   for (let i = 0; i < 4; i++) {
     document.getElementById(`alt-${i}`).disabled = true;
@@ -251,21 +518,44 @@ function responder(indiceAlternativaSelecionada) {
     btnSelecionado.classList.add('correta');
     estado.pontosAcumulados += valorDaPergunta(estado.perguntaAtual);
 
-    if (estado.perguntaAtual === 9) { // era a última
-      setTimeout(() => exibirResultado('vitoria', 5.0), 1000);
-    } else {
-      setTimeout(() => {
+    // Mudar a bolinha da pergunta atual para verde imediatamente
+    const bolinhaAtual = document.getElementById(`bolinha-${estado.perguntaAtual}`);
+    if (bolinhaAtual) {
+      bolinhaAtual.classList.remove('atual');
+      bolinhaAtual.classList.add('respondida');
+    }
+
+    const proximaPergunta = () => {
+      if (typeof sons !== 'undefined' && sons.acertou) sons.acertou.onended = null;
+      if (estado.perguntaAtual === 9) { // era a última
+        exibirResultado('vitoria', 5.0);
+      } else {
         estado.perguntaAtual++;
         renderizarPergunta();
-      }, 1500);
+      }
+    };
+
+    if (typeof sons !== 'undefined' && sons.acertou) {
+      sons.acertou.onended = proximaPergunta;
+      tocarSom('acertou');
+      
+      // Fallback de segurança (em caso de falha no áudio)
+      setTimeout(() => {
+        if (sons.acertou.onended === proximaPergunta) proximaPergunta();
+      }, 5000);
+    } else {
+      tocarSom('acertou');
+      setTimeout(proximaPergunta, 1500);
     }
   } else {
     // 3b. Se ERRADA
+    tocarSom('errou');
     btnSelecionado.classList.add('errada');
     document.getElementById(`alt-${idCorreta}`).classList.add('correta'); // Revelar correta
     
     setTimeout(() => {
-      const ptsErrados = Math.round((estado.pontosAcumulados / 2) * 10) / 10;
+      tocarSom('parou');
+      const ptsErrados = estado.pontosAcumulados / 2;
       exibirResultado('errar_pergunta', ptsErrados);
     }, 2000);
   }
@@ -273,11 +563,15 @@ function responder(indiceAlternativaSelecionada) {
 
 // 7.5 — Cards de risco
 function acaoErrar() {
-  const ptsErrados = Math.round((estado.pontosAcumulados / 2) * 10) / 10;
+  pararTrilha();
+  tocarSom('errou');
+  const ptsErrados = estado.pontosAcumulados / 2;
   exibirResultado('errar_card', ptsErrados);
 }
 
 function acaoParar() {
+  pararTrilha();
+  tocarSom('parou');
   exibirResultado('parar', estado.pontosAcumulados);
 }
 
@@ -285,73 +579,62 @@ function acaoParar() {
 
 function ajudaColegas() {
   if (estado.ajudas.colegas <= 0) return;
+  pararTrilha();
+  tocarSom('ajuda');
   estado.ajudas.colegas--;
   atualizarBotoesAjuda();
-  
-  // Encontrar a correta e as erradas
-  let corretaIdx = -1;
-  const indicesErrados = [];
-  for (let i = 0; i < 4; i++) {
-    const btn = document.getElementById(`alt-${i}`);
-    if (btn.dataset.correta === "true") {
-      corretaIdx = i;
-    } else {
-      if (!btn.disabled) { // Considerar apenas as não eliminadas pelas cartas
-        indicesErrados.push(i);
-      }
-    }
-  }
 
-  // A correta ganha entre 50% e 70%
-  const pctCorreta = Math.floor(Math.random() * 21) + 50; 
-  let restante = 100 - pctCorreta;
-  
-  const porcentagens = [];
-  porcentagens[corretaIdx] = pctCorreta;
+  // Criar overlay do popup
+  const overlay = document.createElement('div');
+  overlay.style.position = 'fixed';
+  overlay.style.top = '0'; 
+  overlay.style.left = '0';
+  overlay.style.width = '100%'; 
+  overlay.style.height = '100%';
+  overlay.style.backgroundColor = 'rgba(0,0,0,0.6)'; // fundo semi-transparente para ainda ver a pergunta
+  overlay.style.display = 'flex';
+  overlay.style.justifyContent = 'center';
+  overlay.style.alignItems = 'flex-start'; // alinhar no topo
+  overlay.style.paddingTop = '50px'; // dar um espaço do topo
+  overlay.style.zIndex = '1000';
 
-  // Distribuir o restante aleatoriamente entre as erradas ativas
-  if (indicesErrados.length === 3) {
-    const pct1 = Math.floor(Math.random() * (restante - 2)) + 1;
-    restante -= pct1;
-    const pct2 = Math.floor(Math.random() * (restante - 1)) + 1;
-    const pct3 = restante - pct2;
-    porcentagens[indicesErrados[0]] = pct1;
-    porcentagens[indicesErrados[1]] = pct2;
-    porcentagens[indicesErrados[2]] = pct3;
-  } else if (indicesErrados.length === 2) {
-    const pct1 = Math.floor(Math.random() * (restante - 1)) + 1;
-    const pct2 = restante - pct1;
-    porcentagens[indicesErrados[0]] = pct1;
-    porcentagens[indicesErrados[1]] = pct2;
-  } else if (indicesErrados.length === 1) {
-    porcentagens[indicesErrados[0]] = restante;
-  }
+  const modal = document.createElement('div');
+  modal.style.backgroundColor = '#2b2b2b';
+  modal.style.border = '4px solid #03D92D';
+  modal.style.borderRadius = '15px';
+  modal.style.padding = '30px';
+  modal.style.textAlign = 'center';
+  modal.style.maxWidth = '700px';
+  modal.style.boxShadow = '0 10px 30px rgba(0,0,0,0.8)';
 
-  // Adicionar ao botão
-  for (let i = 0; i < 4; i++) {
-    if (porcentagens[i] !== undefined) {
-      const btn = document.getElementById(`alt-${i}`);
-      const span = document.createElement('span');
-      span.className = "colegas-pct";
-      span.style.float = "right";
-      span.style.color = "#03D92D";
-      span.textContent = ` ${porcentagens[i]}%`;
-      btn.appendChild(span);
-    }
-  }
+  const texto = document.createElement('h2');
+  texto.textContent = "Sigam as instruções e levantem as mãos pra ajudar o colega!";
+  texto.style.color = '#ffffff';
+  texto.style.marginBottom = '25px';
+  texto.style.fontSize = '2.2rem';
 
-  // Remover após 5 segundos
-  setTimeout(() => {
-    for (let i = 0; i < 4; i++) {
-      const btn = document.getElementById(`alt-${i}`);
-      const span = btn.querySelector('.colegas-pct');
-      if (span) span.remove();
-    }
-  }, 5000);
+  const btnPronto = document.createElement('button');
+  btnPronto.textContent = "Pronto";
+  btnPronto.className = "btn"; 
+  btnPronto.style.backgroundColor = "#03D92D";
+  btnPronto.style.color = "#1a1a1a";
+  btnPronto.style.fontSize = "1.5rem";
+  btnPronto.style.padding = "10px 40px";
+
+  btnPronto.onclick = () => {
+    document.body.removeChild(overlay);
+  };
+
+  modal.appendChild(texto);
+  modal.appendChild(btnPronto);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
 }
 
 function ajudaCartas() {
   if (estado.ajudas.cartas <= 0) return;
+  pararTrilha();
+  tocarSom('cartas');
   estado.ajudas.cartas--;
   atualizarBotoesAjuda();
 
@@ -392,6 +675,11 @@ function ajudaCartas() {
   // Revelar após 1.5s
   setTimeout(() => {
     const cartaSorteada = Math.floor(Math.random() * 4); // 0 a 3
+    if (cartaSorteada === 0) {
+      tocarSom('errou');
+    } else {
+      tocarSom('certo');
+    }
     titulo.textContent = cartaSorteada === 0 ? 'Sem sorte! Nenhuma eliminada.' : `Sorte! Eliminando ${cartaSorteada} errada(s).`;
     
     containerCartas.innerHTML = '';
@@ -438,14 +726,20 @@ function aplicarCartas(numEliminar) {
 
 function ajudaPulo() {
   if (estado.ajudas.pulo <= 0) return;
+  
+  // Desabilitar as alternativas imediatamente para evitar cliques enquanto o áudio toca
+  for (let i = 0; i < 4; i++) {
+    const btn = document.getElementById(`alt-${i}`);
+    if (btn) btn.disabled = true;
+  }
+
+  pararTrilha();
   estado.ajudas.pulo--;
+  atualizarBotoesAjuda();
 
   const nivelAtual = DIFICULDADE_POR_RODADA[estado.perguntaAtual];
 
   // Determinar o nível da pergunta substituta
-  // Fácil → substituta também é fácil (não há nível inferior)
-  // Médio → substituta é fácil
-  // Difícil → substituta é médio
   const nivelSubstituta = {
     facil:   "facil",
     medio:   "facil",
@@ -457,34 +751,64 @@ function ajudaPulo() {
   const substituta = reservaDoNivel.find(p => !estado.idsUsados.has(p.id));
 
   if (!substituta) {
-    // Caso extremo: reserva esgotada para aquele nível
-    // Exibir aviso e devolver o uso
     alert("Não há mais perguntas disponíveis para o Pulo neste nível!");
     estado.ajudas.pulo++;
     atualizarBotoesAjuda();
+    
+    // Reabilitar as alternativas não eliminadas
+    for (let i = 0; i < 4; i++) {
+      const btn = document.getElementById(`alt-${i}`);
+      if (btn && !btn.classList.contains('eliminada')) btn.disabled = false;
+    }
+    
+    // Voltar a tocar a trilha, já que o pulo falhou
+    tocarSom('trilha');
     return;
   }
 
-  // Marcar a substituta como usada
+  // Marcar a substituta como usada no jogo atual e na sessão global
   estado.idsUsados.add(substituta.id);
+  adicionarPerguntasUsadasSessao([substituta.id]);
 
   // Remover a substituta da reserva para não ser sorteada de novo
   estado.reserva[nivelSubstituta] = reservaDoNivel.filter(p => p.id !== substituta.id);
 
-  // Substituir a pergunta atual no array do quiz (sem avançar o índice)
-  // DÚVIDA: O guia MD indica 'estado.perguntasDoQuiz', mas a variável correta e existente no projeto é 'perguntasQuiz'. Alterado para manter o projeto funcional.
-  perguntasQuiz[estado.perguntaAtual] = substituta;
+  const executarPulo = () => {
+    if (typeof sons !== 'undefined' && sons.pulo) sons.pulo.onended = null;
+    
+    // Substituir a pergunta atual no array do quiz (sem avançar o índice)
+    perguntasQuiz[estado.perguntaAtual] = substituta;
 
-  // Re-renderizar a pergunta (função já existente no projeto)
-  renderizarPergunta();
-  atualizarBotoesAjuda();
+    // Re-renderizar a pergunta (função já existente no projeto)
+    renderizarPergunta();
+  };
+
+  if (typeof sons !== 'undefined' && sons.pulo) {
+    sons.pulo.onended = executarPulo;
+    tocarSom('pulo');
+    
+    // Fallback de segurança (em caso de falha no áudio)
+    setTimeout(() => {
+      if (sons.pulo.onended === executarPulo) executarPulo();
+    }, 5000);
+  } else {
+    tocarSom('pulo');
+    setTimeout(executarPulo, 1500);
+  }
 }
 
 // --- Passo 9: Telas de Resultado ---
 function exibirResultado(tipo, pontos) {
+  // ADICIONAR: marcar o jogador atual como "já jogou" nesta sessão
+  const nomeJogador = sessionStorage.getItem('jogadorAtual');
+  if (nomeJogador && typeof marcarAlunoComoJaJogou === 'function') {
+    marcarAlunoComoJaJogou(nomeJogador);
+    adicionarAoRanking(nomeJogador, pontos);
+  }
+
   const areaPrincipal = document.getElementById('area-quiz-principal');
   const nome = sessionStorage.getItem('jogadorAtual') || "Jogador";
-  const pontosFormatados = pontos.toFixed(1).replace('.', ',');
+  const pontosFormatados = Number(pontos).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
 
   let conteudoHTML = '';
   let estiloExtra = '';
@@ -519,7 +843,7 @@ function exibirResultado(tipo, pontos) {
   }
 
   conteudoHTML += `
-    <button class="btn" style="background-color: #2b2b2b; color: #03D92D; border-color: #03D92D; padding: 20px 40px; font-size: 2rem;" onclick="window.location.href='index.html'">Jogar Novamente</button>
+    <button class="btn" style="background-color: #2b2b2b; color: #03D92D; border-color: #03D92D; padding: 20px 40px; font-size: 2rem;" onclick="pararTodosOsSons(); window.location.href='index.html'">Jogar Novamente</button>
   `;
 
   // Modificar o layout da area principal para centralizar a mensagem
@@ -540,7 +864,15 @@ function exibirResultado(tipo, pontos) {
   areaPrincipal.innerHTML = conteudoHTML;
 }
 
-// Inicializar automaticamente caso esteja na tela de quiz
+// Inicializar caso esteja na tela de quiz
 if (document.getElementById('quiz-nome-jogador')) {
-  inicializarQuiz();
+  const overlay = document.getElementById('overlay-iniciar-quiz');
+  if (overlay) {
+    overlay.addEventListener('click', () => {
+      overlay.style.display = 'none';
+      inicializarQuiz();
+    });
+  } else {
+    inicializarQuiz();
+  }
 }

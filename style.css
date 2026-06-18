@@ -209,3 +209,225 @@ h2 {
 .badge-facil   { color: #03D92D; border-color: #03D92D; }
 .badge-medio   { color: #D9B703; border-color: #D9B703; }
 .badge-dificil { color: #D90303; border-color: #D90303; }
+
+/* Controle de exibição das telas */
+.tela-oculta {
+  display: none;
+}
+
+.tela-ativa {
+  display: block;
+}
+
+/* Grid de alunos */
+.grid-alunos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  justify-content: center;
+  gap: 16px;
+  margin: 32px auto;
+  max-width: 1100px;
+}
+
+.aluno-card {
+  background-color: #2b2b2b;
+  border: 3px solid #3a3a3a;
+  border-radius: 12px;
+  padding: 20px;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #ffffff;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
+}
+
+.aluno-card:hover {
+  border-color: #03D92D;
+  background-color: #353535;
+  transform: scale(1.03);
+}
+
+/* Aluno que já jogou nesta sessão */
+.aluno-card.ja-jogou {
+  opacity: 0.5;
+  border-color: #555555;
+  position: relative;
+}
+
+.aluno-card.ja-jogou::after {
+  content: "✔ Já jogou";
+  display: block;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #03D92D;
+  font-weight: bold;
+}
+
+.aluno-card.ja-jogou:hover {
+  border-color: #03D92D;
+  opacity: 0.8;
+}
+
+/* Botão de destaque (sortear) */
+.btn-destaque {
+  background-color: #03D92D;
+  color: #1a1a1a;
+  font-size: 1.6rem;
+  padding: 18px 40px;
+}
+
+.btn-destaque:hover {
+  background-color: #ffffff;
+}
+
+.btn-secundario {
+  background-color: transparent;
+  border: 2px solid #888888;
+  color: #cccccc;
+  margin-top: 20px;
+}
+
+.btn-secundario:hover {
+  border-color: #03D92D;
+  color: #03D92D;
+  background-color: transparent;
+}
+
+.botoes-confirmacao {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin: 24px 0;
+}
+
+.splash-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #1a1a1a;
+  cursor: pointer;
+}
+
+.splash-imagem {
+  max-width: 60%;
+  max-height: 70vh;
+  animation: pulsar 1.6s ease-in-out infinite;
+}
+
+@keyframes pulsar {
+  0%   { transform: scale(1);    opacity: 1; }
+  50%  { transform: scale(1.06); opacity: 0.85; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+.splash-instrucao {
+  margin-top: 24px;
+  font-size: 1.3rem;
+  color: #03D92D;
+  font-weight: bold;
+  letter-spacing: 1px;
+  animation: piscar 1.8s ease-in-out infinite;
+}
+
+@keyframes piscar {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
+/* Barra de Progresso do Quiz */
+.barra-progresso-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.barra-progresso {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #2b2b2b;
+  border-radius: 50px;
+  padding: 10px 24px;
+  width: 500px;
+  max-width: 90vw;
+  border: 2px solid #3a3a3a;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.bolinha-progresso {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #3b82f6; /* Azul (Não respondida) */
+  transition: background-color 0.4s ease, transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+.bolinha-progresso.atual {
+  background-color: #D9B703; /* Amarelo (Atual) */
+  transform: scale(1.3);
+  box-shadow: 0 0 10px #D9B703;
+}
+
+.bolinha-progresso.respondida {
+  background-color: #03D92D; /* Verde (Respondida) */
+  box-shadow: 0 0 8px #03D92D;
+}
+
+/* Ranking do Dia */
+.ranking-titulo {
+  color: #D9B703;
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+}
+
+.ranking-table {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 40px auto;
+  border-collapse: collapse;
+  background-color: #2b2b2b;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.ranking-table th {
+  background-color: #3a3a3a;
+  color: #ffffff;
+  padding: 15px;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+}
+
+.ranking-table td {
+  padding: 15px;
+  font-size: 1.8rem;
+  color: #ffffff;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.ranking-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ranking-table .col-posicao {
+  font-weight: bold;
+  font-size: 2rem;
+  width: 15%;
+}
+
+.ranking-table .col-nome {
+  text-align: left;
+  font-weight: bold;
+}
+
+.ranking-table .col-pontos {
+  color: #03D92D;
+  font-weight: bold;
+  width: 30%;
+}

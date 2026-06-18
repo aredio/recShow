@@ -52,6 +52,11 @@
     <div id="quiz-nome-jogador" class="nome-jogador-topo">Jogador</div>
   </div>
 
+  <div id="overlay-iniciar-quiz" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(26,26,26,0.95); z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer;">
+    <h1 style="color: #03D92D; font-size: 4rem; margin-bottom: 20px;">Preparado?</h1>
+    <p style="color: #ffffff; font-size: 2rem; animation: piscar 1.5s infinite;">Clique na tela para iniciar a partida</p>
+  </div>
+
   <div class="layout-quiz" id="area-quiz-principal">
     
     <!-- Lado Esquerdo -->
@@ -87,8 +92,16 @@
     </div>
 
   </div>
+  
+  <!-- Barra de Progresso -->
+  <div class="barra-progresso-wrapper" id="barra-progresso-wrapper">
+    <div class="barra-progresso" id="barra-progresso">
+      <!-- As bolinhas serão injetadas via JS -->
+    </div>
+  </div>
 
   <!-- Ordem importante: dados primeiro, lógica depois -->
+  <script src="audio.js"></script>
   <script src="perguntas.js"></script>
   <script src="app.js"></script>
 </body>
