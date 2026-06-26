@@ -390,7 +390,8 @@ function inicializarQuiz() {
 
 // 7.2 — Cálculo de pontos por pergunta
 function valorDaPergunta(indicePergunta) {
-  return 0.5;
+  const valor = (indicePergunta + 1) * 0.3;
+  return Math.round(valor * 10) / 10; // arredonda para 1 casa decimal
 }
 
 // 7.3 — Renderizar pergunta atual
@@ -415,14 +416,14 @@ function renderizarPergunta() {
     btn.dataset.correta = perguntaObj.alternativas[i].correta;
   }
 
-  // 3. Atualizar o texto "Valendo X.X Pontos"
-  const valendo = valorDaPergunta(estado.perguntaAtual).toFixed(1).replace('.', ',');
-  document.getElementById('texto-pontos').textContent = `Valendo ${valendo} Pontos na média`;
+  // 3. Atualizar o texto "X Pontos acumulados"
+  const acumulados = estado.pontosAcumulados.toFixed(1).replace('.', ',');
+  document.getElementById('texto-pontos').textContent = `${acumulados} Pontos acumulados`;
 
   // 4. Atualizar os cards de risco
-  const ptsErrados = estado.pontosAcumulados / 2;
-  const ptsParar = estado.pontosAcumulados;
-  const ptsAcertar = estado.pontosAcumulados + valorDaPergunta(estado.perguntaAtual);
+  const ptsErrados = Math.round((estado.pontosAcumulados / 2) * 10) / 10;
+  const ptsParar = Math.round(estado.pontosAcumulados * 10) / 10;
+  const ptsAcertar = Math.round((estado.pontosAcumulados + valorDaPergunta(estado.perguntaAtual)) * 10) / 10;
   
   // Formatar para mostrar até 2 casas decimais, substituindo o ponto por vírgula
   const formatarPontos = (pts) => Number(pts).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
@@ -516,7 +517,7 @@ function responder(indiceAlternativaSelecionada) {
   if (isCorreta) {
     // 3a. Se CORRETA
     btnSelecionado.classList.add('correta');
-    estado.pontosAcumulados += valorDaPergunta(estado.perguntaAtual);
+    estado.pontosAcumulados = Math.round((estado.pontosAcumulados + valorDaPergunta(estado.perguntaAtual)) * 10) / 10;
 
     // Mudar a bolinha da pergunta atual para verde imediatamente
     const bolinhaAtual = document.getElementById(`bolinha-${estado.perguntaAtual}`);
@@ -528,7 +529,7 @@ function responder(indiceAlternativaSelecionada) {
     const proximaPergunta = () => {
       if (typeof sons !== 'undefined' && sons.acertou) sons.acertou.onended = null;
       if (estado.perguntaAtual === 9) { // era a última
-        exibirResultado('vitoria', 5.0);
+        exibirResultado('vitoria', 3.0);
       } else {
         estado.perguntaAtual++;
         renderizarPergunta();
@@ -555,7 +556,7 @@ function responder(indiceAlternativaSelecionada) {
     
     setTimeout(() => {
       tocarSom('parou');
-      const ptsErrados = estado.pontosAcumulados / 2;
+      const ptsErrados = Math.round((estado.pontosAcumulados / 2) * 10) / 10;
       exibirResultado('errar_pergunta', ptsErrados);
     }, 2000);
   }
@@ -565,14 +566,14 @@ function responder(indiceAlternativaSelecionada) {
 function acaoErrar() {
   pararTrilha();
   tocarSom('errou');
-  const ptsErrados = estado.pontosAcumulados / 2;
+  const ptsErrados = Math.round((estado.pontosAcumulados / 2) * 10) / 10;
   exibirResultado('errar_card', ptsErrados);
 }
 
 function acaoParar() {
   pararTrilha();
   tocarSom('parou');
-  exibirResultado('parar', estado.pontosAcumulados);
+  exibirResultado('parar', Math.round(estado.pontosAcumulados * 10) / 10);
 }
 
 // --- Passo 8: Ajudas ---
@@ -651,7 +652,7 @@ function ajudaCartas() {
   overlay.style.zIndex = '1000';
 
   const titulo = document.createElement('h2');
-  titulo.textContent = 'Sorteando uma carta...';
+  titulo.textContent = 'Escolha uma carta para revelar...';
   titulo.style.color = '#ffffff';
   titulo.style.marginBottom = '30px';
   overlay.appendChild(titulo);
@@ -660,48 +661,91 @@ function ajudaCartas() {
   containerCartas.style.display = 'flex';
   containerCartas.style.gap = '20px';
 
+  const valoresCartas = [0, 1, 2, 3];
+  embaralharArray(valoresCartas);
+
+  const cartasDinamicas = [];
+
   for(let i = 0; i < 4; i++) {
     const carta = document.createElement('div');
-    carta.style.width = '100px';
-    carta.style.height = '150px';
+    carta.style.width = '110px';
+    carta.style.height = '160px';
     carta.style.backgroundColor = '#2b2b2b';
     carta.style.border = '3px solid #03D92D';
     carta.style.borderRadius = '10px';
+    carta.style.display = 'flex';
+    carta.style.alignItems = 'center';
+    carta.style.justifyContent = 'center';
+    carta.style.fontSize = '3.5rem';
+    carta.style.fontWeight = 'bold';
+    carta.style.color = 'transparent'; // Esconder o número inicialmente
+    carta.style.cursor = 'pointer';
+    carta.style.transition = 'transform 0.2s, background-color 0.2s, box-shadow 0.2s';
+    
+    // Efeito hover
+    carta.onmouseover = () => {
+      carta.style.transform = 'scale(1.08)';
+      carta.style.boxShadow = '0 0 15px rgba(3, 217, 45, 0.6)';
+    };
+    carta.onmouseout = () => {
+      carta.style.transform = 'scale(1)';
+      carta.style.boxShadow = 'none';
+    };
+
+    carta.dataset.valor = valoresCartas[i];
+    cartasDinamicas.push(carta);
+
+    carta.onclick = () => {
+      // Bloquear novos cliques em todas as cartas
+      cartasDinamicas.forEach(c => {
+        c.style.pointerEvents = 'none';
+        c.onmouseover = null;
+        c.onmouseout = null;
+      });
+
+      const valorSorteado = parseInt(carta.dataset.valor);
+      
+      // Tocar som apropriado
+      if (valorSorteado === 0) {
+        tocarSom('errou');
+      } else {
+        tocarSom('certo');
+      }
+
+      // Destacar a carta escolhida
+      carta.style.backgroundColor = '#03D92D';
+      carta.style.color = '#1a1a1a';
+      carta.style.transform = 'scale(1.1)';
+      carta.style.boxShadow = '0 0 25px #03D92D';
+      carta.textContent = valorSorteado;
+
+      // Atualizar o título
+      titulo.textContent = valorSorteado === 0 
+        ? 'Sem sorte! Nenhuma alternativa eliminada.' 
+        : `Sorte! Eliminando ${valorSorteado} errada(s).`;
+
+      // Revelar as outras cartas de forma sutil
+      cartasDinamicas.forEach((c) => {
+        if (c !== carta) {
+          c.style.opacity = '0.5';
+          c.style.backgroundColor = '#3a3a3a';
+          c.style.color = '#bbbbbb';
+          c.textContent = c.dataset.valor;
+        }
+      });
+
+      // Fechar e aplicar efeito
+      setTimeout(() => {
+        document.body.removeChild(overlay);
+        aplicarCartas(valorSorteado);
+      }, 2500);
+    };
+
     containerCartas.appendChild(carta);
   }
+
   overlay.appendChild(containerCartas);
   document.body.appendChild(overlay);
-
-  // Revelar após 1.5s
-  setTimeout(() => {
-    const cartaSorteada = Math.floor(Math.random() * 4); // 0 a 3
-    if (cartaSorteada === 0) {
-      tocarSom('errou');
-    } else {
-      tocarSom('certo');
-    }
-    titulo.textContent = cartaSorteada === 0 ? 'Sem sorte! Nenhuma eliminada.' : `Sorte! Eliminando ${cartaSorteada} errada(s).`;
-    
-    containerCartas.innerHTML = '';
-    const cartaRevelada = document.createElement('div');
-    cartaRevelada.style.width = '150px';
-    cartaRevelada.style.height = '200px';
-    cartaRevelada.style.backgroundColor = '#03D92D';
-    cartaRevelada.style.color = '#1a1a1a';
-    cartaRevelada.style.display = 'flex';
-    cartaRevelada.style.alignItems = 'center';
-    cartaRevelada.style.justifyContent = 'center';
-    cartaRevelada.style.fontSize = '4rem';
-    cartaRevelada.style.fontWeight = 'bold';
-    cartaRevelada.style.borderRadius = '10px';
-    cartaRevelada.textContent = cartaSorteada;
-    containerCartas.appendChild(cartaRevelada);
-
-    setTimeout(() => {
-      document.body.removeChild(overlay);
-      aplicarCartas(cartaSorteada);
-    }, 2000);
-  }, 1500);
 }
 
 function aplicarCartas(numEliminar) {
@@ -710,7 +754,7 @@ function aplicarCartas(numEliminar) {
   const indicesErrados = [];
   for (let i = 0; i < 4; i++) {
     const btn = document.getElementById(`alt-${i}`);
-    if (btn.dataset.correta === "false" && !btn.disabled) {
+    if (btn.dataset.correta === "false" && !btn.disabled && !btn.classList.contains('eliminada')) {
       indicesErrados.push(i);
     }
   }
@@ -720,7 +764,8 @@ function aplicarCartas(numEliminar) {
   for (let i = 0; i < numEliminar && i < indicesErrados.length; i++) {
     const btn = document.getElementById(`alt-${indicesErrados[i]}`);
     btn.classList.add('eliminada');
-    // Para as cartas, opacidade e bloqueio são tratados pelo CSS (.eliminada)
+    btn.disabled = true;
+    btn.style.pointerEvents = 'none';
   }
 }
 
